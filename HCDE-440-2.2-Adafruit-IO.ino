@@ -1,39 +1,30 @@
-// Adafruit IO Digital Input Example
-// Tutorial Link: https://learn.adafruit.com/adafruit-io-basics-digital-input
-//
-// Adafruit invests time and resources providing this open source code.
-// Please support Adafruit and open source hardware by purchasing
-// products from Adafruit!
-//
-// Written by Todd Treece for Adafruit Industries
-// Copyright (c) 2016 Adafruit Industries
-// Licensed under the MIT license.
-//
-// All text above must be included in any redistribution.
-
+// Peter Schultz ICE 2 4/12/19
 /************************** Configuration ***********************************/
 
 // edit the config.h tab and enter your Adafruit IO credentials
 // and any additional configuration needed for WiFi, cellular,
 // or ethernet clients.
-#include "config.h"0
-
+#include "config.h"
+#include <Adafruit_Sensor.h>
+#include <DHT.h>
+#include <DHT_U.h>
 /************************ Example Starts Here *******************************/
+float hum=0;
+// pin connected to DH22 data line
+#define DATA_PIN 12 
 
-// digital pin 5
-#define BUTTON_PIN 2
+// create DHT22 instance
+DHT_Unified dht(DATA_PIN, DHT22); // initializes dht object
 
-// button state
-bool current = false;
-bool last = false;
+int PHOTOCELL_PIN = 0; // photocell data input to pin 0
 
-// set up the 'digital' feed
-AdafruitIO_Feed *digital = io.feed("button");
+int curPhoto = 0;
+
+AdafruitIO_Feed *analog = io.feed("analog"); // set up feeds
+AdafruitIO_Feed *humidity = io.feed("humidity");
 
 void setup() {
 
-  // set button pin as an input
-  pinMode(BUTTON_PIN, INPUT_PULLUP);
 
   // start the serial connection
   Serial.begin(115200);
@@ -47,7 +38,7 @@ void setup() {
 
   // connect to io.adafruit.com
   Serial.print("Connecting to Adafruit IO");
-  io.connect();
+  io.connect(); // connects to the adafruit website
 
   // wait for a connection
   while(io.status() < AIO_CONNECTED) {
@@ -58,6 +49,8 @@ void setup() {
   // we are connected
   Serial.println();
   Serial.println(io.statusText());
+  Serial.println("initializing dht");
+  dht.begin(); // initializes dht sensor
 
 }
 
@@ -69,24 +62,20 @@ void loop() {
   // io.adafruit.com, and processes any incoming data.
   io.run();
 
-  // grab the current state of the button.
-  // we have to flip the logic because we are
-  // using a pullup resistor.
-  if(digitalRead(BUTTON_PIN) == LOW)
-    current = true;
-  else
-    current = false;
+  curPhoto = analogRead(PHOTOCELL_PIN); // reads analog data from photocell
+  Serial.print("Photocell: ");
+  Serial.println(curPhoto);
+  sensors_event_t event;// initializes dht sensor event
 
-  // return if the value hasn't changed
-  if(current == last)
-    return;
-
-  // save the current state to the 'digital' feed on adafruit io
-  Serial.print("sending button -> ");
-  Serial.println(current);
-  digital->save(current);
-
+  dht.humidity().getEvent(&event); // define event
+  hum = event.relative_humidity;
+  Serial.print("humidity: ");
+  Serial.print(hum);
+  Serial.println("%");
+  
+  analog->save(curPhoto); // saves data to adafruit io
+  humidity->save(hum);
   // store last button state
-  last = current;
-
+//  last = current;
+  delay(3000);
 }
