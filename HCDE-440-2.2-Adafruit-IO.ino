@@ -41,7 +41,7 @@ void setup() {
   io.connect(); // connects to the adafruit website
 
   // wait for a connection
-  while(io.status() < AIO_CONNECTED) {
+  while(io.status() < AIO_CONNECTED) { //test
     Serial.print(".");
     delay(500);
   }
